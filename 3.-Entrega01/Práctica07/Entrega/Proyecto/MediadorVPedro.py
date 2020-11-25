@@ -1,7 +1,6 @@
 from DynamicCodeLoader import loadDynamicCode
 from Loader import Loader
-from Gui import Gui
-from JuegoEscapa import Level, State
+import time
 
 """
 Clase Mediador
@@ -56,13 +55,12 @@ class Mediator(object):
     def register_ui(self, ui):
         self.ui = ui
 
-        desplegable, self.visor, control = ui.get_ui_elements().children
+        dropdown, self.visor, control = ui.get_ui_elements().children
 
         directions, actions = control.children
 
         box1, box2 = directions.children
-        # empty,up,cambia=box1.children
-        empty, up = box1.children
+        _, up = box1.children
         left, down, right = box2.children
 
         action_buttons = actions.children
@@ -70,9 +68,9 @@ class Mediator(object):
         l = Loader()
         levels = l.get_all_levels()
 
-        desplegable.options = levels
+        dropdown.options = levels
 
-        desplegable.observe(
+        dropdown.observe(
             lambda name: self.update_level_observer(name), names="value")
 
         self.filename = levels[0]
@@ -82,7 +80,6 @@ class Mediator(object):
         down.on_click(lambda button: self.button_action_event(button))
         right.on_click(lambda button: self.button_action_event(button))
         left.on_click(lambda button: self.button_action_event(button))
-        #cambia.on_click(lambda button: self.button_action_event(button))
 
         for abutton in action_buttons:
             abutton.on_click(lambda button: self.button_action_event(button))
@@ -129,15 +126,35 @@ class Mediator(object):
             initialNode = self.nodes.initial_node_JE(
                 self.level, self.state, self.nodes.heuristic_JE)
 
+            # Añadido por Estudiante.
+            # -----------------------------
+            self.show_executing()
+            # Fin Añadido por Estudiante.
+            # -----------------------------
+
             self.sol = self.search.AStar(
                 initialNode, self.nodes.successors_JE, self.nodes.goal_JE, self.nodes.heuristic_JE)
 
             self.iterations = self.nodes.iterations
             self.total_cost = self.nodes.total_cost
-            self.id_sol = 0
 
-            print("self.sol")
-            print(self.sol)
+            # Bloque por Estudiante.
+            # -----------------------------
+            self.elapsed_time = self.nodes.elapsed_time
+            self.show_gui()
+            time.sleep(0.5)  # Wait .5 second to show animation.
+            
+            # Animate every .25s.
+            for s in self.sol:
+                time.sleep(0.25)
+                self.state = s
+                self.show_gui()
+            # -----------------------------
+            # Fin Añadido por Estudiante.
+
+            self.id_sol = 0
+            # print("self.sol")
+            # print(self.sol)
 
         elif desc == "Next":
             if len(self.sol) > 0 and len(self.sol) > self.id_sol+1:
@@ -151,6 +168,9 @@ class Mediator(object):
                 s = self.sol[self.id_sol]
                 self.state = s
 
+        self.show_gui()
+
+    def show_gui(self):
         htmlStr = self.ui.get_html(self.level, self.state)
 
         if not self.manual and len(self.sol) > 0:
@@ -158,10 +178,21 @@ class Mediator(object):
             htmlStr += str(self.iterations)
             htmlStr += "<br/> Coste de la solucion <br/>"
             htmlStr += str(self.total_cost)
+            htmlStr += "<br/> Tiempo empleado <br/>"
+            htmlStr += f"{str(self.elapsed_time)} segundos"
             htmlStr += "<br/> ______________ <br/>"
 
         self.visor.value = htmlStr
 
         if self.model.is_goal(self.state):
-
             self.visor.value += "¡GANASTE! <br> Si hubiera otro nivel, ¡cárgalo!"
+
+    # Añadido por Estudiante.
+    # -----------------------------
+    def show_executing(self):
+        htmlStr = self.ui.get_html(self.level, self.state)
+        htmlStr += "Resolviendo algoritmo, solo serán unos segundos"
+        htmlStr += "<br/> ______________ <br/>"
+        self.visor.value = htmlStr
+    # -----------------------------
+    # Fin Añadido por Estudiante.
